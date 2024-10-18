@@ -26,7 +26,7 @@ app.use("/admin", adminRoute);
 mongoose
   .connect(process.env.MONGO_URL)
   .then(() => {
-    app.listen(process.env.PORT, () => {
+    app.listen(process.env.PORT || 3000, () => {
       console.log("connected to db & listening on port:", process.env.PORT);
     });
   })
