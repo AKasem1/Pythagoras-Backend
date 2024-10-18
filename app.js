@@ -2,7 +2,6 @@ require("dotenv").config();
 const cors = require("cors");
 const path = require("path");
 const express = require("express");
-const serverless = require("serverless-http");
 const { default: mongoose } = require("mongoose");
 const userRoute = require("./routes/user");
 const adminRoute = require("./routes/admin");
@@ -23,8 +22,6 @@ app.use(
 
 app.use("/user", userRoute);
 app.use("/admin", adminRoute);
-app.use("/.netlify/functions/app", router);
-module.exports.handler = serverless(app);
 
 mongoose
   .connect(process.env.MONGO_URL)
