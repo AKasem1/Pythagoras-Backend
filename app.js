@@ -13,7 +13,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://pythagoras-fronttend.vercel.app", ""],
+    origin: ["http://localhost:3000", "https://pythagoras-fronttend-xytg.vercel.app", ""],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     preflightContinue: false,
     optionsSuccessStatus: 204,
