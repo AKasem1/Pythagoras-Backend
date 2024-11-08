@@ -19,7 +19,7 @@ const lessonSchema = new Schema({
     },
     video_url: { 
         type: String, 
-        required: true 
+        default: null
     },
     pdf_url: { 
         type: String, 

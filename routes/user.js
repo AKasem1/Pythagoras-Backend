@@ -3,6 +3,8 @@ const userAuth = require('../middlewares/userAuth')
 const { signup, login, editProfile, forgetPassword, otpVerification, resetPassword } = require('../controllers/userController');
 const { getGrades } = require('../controllers/gradeController');
 const { getCoursesByGrade, getCourseById } = require('../controllers/courseController');
+const { getCompletedLessons, getLessonsByCourse} = require('../controllers/lessonController')
+const { subscribeCourse, deleteSubscription, getMyCourses } = require('../controllers/subscriptionController')
 
 const router = express.Router();
 
@@ -19,4 +21,9 @@ router.use(userAuth);
 router.put('/editprofile/:id', editProfile)
 router.get('/coursebyid/:courseId', getCourseById);
 
+router.post('/subscribe/:courseId', subscribeCourse)
+router.get('/mycourses/:userId', getMyCourses)
+
+router.get('/lessonsbycourse/:courseId', getLessonsByCourse)
+router.get('/completedlessons', getCompletedLessons);
 module.exports = router;

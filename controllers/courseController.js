@@ -1,5 +1,15 @@
 const Course = require('../models/CourseModel');
 const Grade = require('../models/GradeModel');
+const mongoose = require('mongoose');
+const XLSX = require('xlsx');
+
+const isCodeExist = async (code, courseId) => {
+    const course = await Course.findOne({
+        _id: courseId,
+        "codes.code": code
+    });
+    return course !== null;
+};
 
 const addCourse = async (req, res) => {
     try {
@@ -141,6 +151,125 @@ const deleteAllCourses = async (req, res) => {
     }
 }
 
+const generateCodes = async (req, res) => {
+    try {
+        const { numberOfCodes, courseId } = req.body;
+        const codePromises = Array.from({ length: numberOfCodes }, async () => {
+            let newCode;
+            do {
+                newCode = (Math.random() + 1).toString(36).substring(7);
+            } while (await isCodeExist(newCode, courseId));
+            return newCode;
+        });
+        
+        const generatedCodes = await Promise.all(codePromises)
+        const bulkOperations = generatedCodes.map(code => ({
+            updateOne: {
+                filter: { _id: courseId },
+                update: { $push: { codes: { code } } }
+            }
+        }));
+        
+        await Course.bulkWrite(bulkOperations);
+        res.status(200).json(generatedCodes);
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send('Server error: ' + error.message);
+    }
+};
+
+
+const getCodes = async (req, res) => {
+    const { courseId, codeStatus } = req.body;
+    try {
+        console.log(courseId, codeStatus)
+        const courseObjectId = new mongoose.Types.ObjectId(courseId);
+        const result = await Course.aggregate([
+            { $match: { _id: courseObjectId } },
+            {
+                $project: {
+                    codes: {
+                        $filter: {
+                            input: "$codes",
+                            as: "code",
+                            cond: { $eq: ["$$code.status", codeStatus] }
+                        }
+                    }
+                }
+            }
+        ]);
+
+        if (result.length === 0) {
+            throw new Error('هذا الكورس غير موجود');
+        }
+
+        res.status(200).json(result[0].codes);
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send('Server error: ' + error.message);
+    }
+};
+
+
+const getExcelCodes = async (req, res) => {
+    const { courseId, codeStatus, selectedGradeName } = req.body;
+    try {
+        let codes = [];
+        console.log(courseId, codeStatus, selectedGradeName)
+        const courseObjectId = new mongoose.Types.ObjectId(courseId);
+        if( codeStatus == "تم الاستخدام" || codeStatus == "تم البيع"){
+            const result = await Course.aggregate([
+                { $match: { _id: courseObjectId } },
+                {
+                    $project: {
+                        codes: {
+                            $filter: {
+                                input: "$codes",
+                                as: "code",
+                                cond: { $eq: ["$$code.status", codeStatus] }
+                            }
+                        }
+                    }
+                }
+            ]);
+            if (result.length === 0) {
+                throw new Error('هذا الكورس غير موجود');
+            }
+            codes = result[0].codes;
+        }
+        else if(codeStatus == "متاح"){
+            const updatedCourse = await Course.findOneAndUpdate(
+                { _id: courseObjectId },
+                { $set: { "codes.$[elem].status": "تم البيع" } },
+                { 
+                    arrayFilters: [{ "elem.status": codeStatus }],
+                    new: true // Return the updated document
+                }
+            );
+    
+            if (!updatedCourse) {
+                throw new Error('هذا الكورس غير موجود');
+            }
+            codes = updatedCourse.codes.filter(code => code.status === "تم البيع");
+        }
+
+        const workbook = XLSX.utils.book_new()
+        const worksheetData = codes.map(c => ({
+            'الكود': c.code,
+            'الصف': selectedGradeName
+          }));
+        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Codes');
+        const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+        res.setHeader('Content-Disposition', 'attachment; filename="codes.xlsx"');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.status(200).send(buffer);
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send('Server error: ' + error.message);
+    }
+};
+
 module.exports = {
     addCourse,
     getCourses,
@@ -149,5 +278,8 @@ module.exports = {
     getCoursesByGrade,
     deleteAllCourses,
     getCoursesByGradeName,
-    getCourseById
+    getCourseById,
+    generateCodes,
+    getCodes,
+    getExcelCodes
 }

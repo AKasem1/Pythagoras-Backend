@@ -22,7 +22,7 @@ const evaluationSchema = new Schema({
         type: Schema.Types.Decimal128, 
         required: true 
     },
-    missed_lessons: [{ 
+    completed_lessons: [{ 
         type: Schema.Types.ObjectId, 
         ref: 'Lesson' 
     }],

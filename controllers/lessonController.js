@@ -1,5 +1,6 @@
 const Lesson = require('../models/LessonModel');
 const Course = require('../models/CourseModel');
+const User = require('../models/UserModel')
 
 const isYoutubeUrl = (url) => {
     const youtubeUrl = 'https://www.youtube.com/embed/';
@@ -8,16 +9,14 @@ const isYoutubeUrl = (url) => {
 
 const addLesson = async (req, res) => {
     try {
-        const { title, courseName, grade_id, video_url, pdf_url, isVisible} = req.body
+        const { title, courseName, grade_id, isVisible} = req.body
         console.log("title: ", title)
         console.log("courseName: ", courseName)
         console.log("grade_id: ", grade_id)
-        console.log("video_url: ", video_url)
-        console.log("pdf_url: ", pdf_url)
         console.log("is visible? ", isVisible)
         
         console.log("req.body: ", req.body)
-        if(!title || !courseName || !video_url || !grade_id){
+        if(!title || !courseName || !grade_id){
             throw Error('يجب إدخال جميع البيانات')
         }
         const course = await Course.findOne({name: courseName, grade: grade_id})
@@ -25,11 +24,11 @@ const addLesson = async (req, res) => {
         if(!course){
             throw Error('المادة الدراسية غير موجودة')
         }
-        if(!isYoutubeUrl(video_url)){
-            throw Error('الرابط المدخل ليس رابط فيديو من يوتيوب')
-        }
-        const lesson = new Lesson({title, grade: grade_id, course: course._id, video_url, pdf_url, isVisible})
+
+        const lesson = new Lesson({title, grade: grade_id, course: course._id, visible: isVisible})
         await lesson.save()
+        course.numOfLessons += 1; 
+        await course.save()
         res.status(201).json(lesson)
     }
     catch (error) {
@@ -73,6 +72,9 @@ const deleteLesson = async (req, res) => {
             throw Error('الدرس غير موجود')
         }
         await Lesson.findByIdAndDelete(req.params.id);
+        const course = await Course.findById(lesson.course)
+        course.numOfLessons -= 1; 
+        await course.save()
         res.status(200).json({message: 'تم حذف الدرس بنجاح'})
     }
     catch (error) {
@@ -132,4 +134,65 @@ const latestWeekInCourse = async (req, res) => {
     }
 }
 
-module.exports = { addLesson, getLesson, getLessons, deleteLesson, deleteAllLessons, latestWeekInCourse };
+const getCompletedLessons = async (req, res) => {
+    try {
+        const { userId, courseId } = req.query;
+        console.log(userId)
+        console.log(courseId)
+        const user = await User.findById(userId).populate('evaluations.completed_lessons').exec();
+        const evaluation = user.evaluations.find(e => e.course_id.toString() === courseId);
+        if(evaluation){
+            res.status(200).json(evaluation.completed_lessons);
+        }
+        else{
+            res.status(404).send("Not Found");
+        }
+
+    } catch (error) {
+        console.error(error.message)
+        res.status(500).send('Server error: ', error.message)
+    }
+};
+
+const addVideo = async (req, res) => {
+    try {
+        const { lesson_id, video_url, pdf_url } = req.body
+        console.log(lesson_id, video_url, pdf_url)
+        const lesson = await Lesson.findById(lesson_id)
+        if(!lesson){
+            throw Error('هذا الدرس غير موجود')
+        }
+
+        lesson.video_url = video_url
+        lesson.pdf_url = pdf_url
+        const lessonCourse = await Course.findById(lesson.course)
+        lessonCourse.numOfVideos += 1;      
+        await lessonCourse.save()  
+        await lesson.save()
+
+        res.status(200).json({message: 'تم إضافة الفيديو بنجاح'})
+    }
+    catch (error) {
+        console.error(error.message)
+        res.status(500).send('Server error: ', error.message)
+    }
+}
+
+const getLessonsByCourse = async (req, res) => {
+    const {courseId} = req.params;
+    try {
+        console.log("course id: ", courseId)
+        const lessons = await Lesson.find({course: courseId})
+        .populate('course')
+        .populate('grade')
+        if(!lessons){
+            throw Error("لا توجد دروس لهذا الكورس");
+        }
+        res.status(200).json(lessons)
+    } catch (error) {
+        console.error(error.message)
+        res.status(500).send('Server error: ', error.message)
+    }
+}
+
+module.exports = { addLesson, getLesson, getLessons, deleteLesson, deleteAllLessons, latestWeekInCourse, getCompletedLessons, addVideo, getLessonsByCourse};

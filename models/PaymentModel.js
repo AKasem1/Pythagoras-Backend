@@ -14,21 +14,17 @@ const paymentSchema = new Schema({
     payment_method: { 
         type: String, 
         enum: ['wallet', 'external'], 
-        required: true 
+        default: 'external' 
     },
     payment_date: { 
         type: Date, 
         default: Date.now 
     },
-    package_id: { 
+    course: { 
         type: Schema.Types.ObjectId, 
-        ref: 'Package', 
-        default: null 
-    },
-    courses: [{ 
-        type: Schema.Types.ObjectId, 
-        ref: 'Course' 
-    }]
+        ref: 'Course',
+        required: true
+    }
 });
 
 const Payment = mongoose.model('Payment', paymentSchema);

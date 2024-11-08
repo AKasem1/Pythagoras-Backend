@@ -9,9 +9,12 @@ const {
     updateCourse,
     getCoursesByGrade,
     deleteAllCourses,
-    getCoursesByGradeName
+    getCoursesByGradeName,
+    generateCodes,
+    getCodes,
+    getExcelCodes
     } = require('../controllers/courseController')
-const {addLesson, getLessons, getLesson, deleteLesson, deleteAllLessons, latestWeekInCourse} = require('../controllers/lessonController')
+const {addLesson, getLessons, getLesson, deleteLesson, deleteAllLessons, latestWeekInCourse, addVideo, getLessonsByCourse} = require('../controllers/lessonController')
 const { addQuiz, getQuizzesByCourse, getQuizByLesson, deleteQuiz, deleteAllQuizzes, addQuestionToQuiz, deleteQuizQuestion, editQuizQuestion } = require('../controllers/quizController');
 // const { addExam, getExamsByModule, getExamByMonth, deleteExam, deleteAllExams, addQuestionToExam, editQuestion, deleteQuestion } = require('../controllers/examController');
 // const {getPackages, netProfit, addPackage} = require('../controllers/packageController');
@@ -42,14 +45,19 @@ router.put('/updatecourse/:id', updateCourse);
 router.delete('/deleteallcourses', deleteAllCourses);
 router.get('/coursesbygrade/:grade_id', getCoursesByGrade);
 router.post('/coursesbygradename', getCoursesByGradeName);
+router.post('/generatecodes', generateCodes)
+router.post('/getcodes', getCodes)
+router.post('/excelCodes', getExcelCodes)
 
 
 router.post('/addlesson', addLesson);
 router.get('/lessons', getLessons);
+router.get('/lessonsbycourse/:courseId', getLessonsByCourse)
 router.get('/lesson/:id', getLesson);
 router.delete('/deletelesson/:id', deleteLesson);
 router.delete('/deletealllessons', deleteAllLessons);
 router.post('/latestweekincourse', latestWeekInCourse);
+router.put('/addvideo', addVideo)
 
 router.post('/addquiz', addQuiz);
 router.get('/quizzes/:course_id', getQuizzesByCourse);
