@@ -130,9 +130,9 @@ const signup = async (req, res) => {
           if(!validator.isEmail(email)){
             throw Error("البريد الإلكتروني غير صحيح")
           }
-          if(!validator.isStrongPassword(password)){
-            throw Error("كلمة السر غير قوية")
-          }
+          // if(!validator.isStrongPassword(password)){
+          //   throw Error("كلمة السر غير قوية")
+          // }
           if(password !== confirmPassword){
             throw Error("كلمة المرور غير متطابقة")
           }
