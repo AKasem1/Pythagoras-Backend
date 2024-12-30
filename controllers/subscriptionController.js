@@ -5,28 +5,34 @@ const Payment = require('../models/PaymentModel');
 const mongoose = require('mongoose');
 
 const subscribeCourse = async (req, res) => {
-    const {user_id, price, payment_method} = req.body;
-    const {courseId} = req.params;
-    const user = await User.findById(user_id)
-    if(!user){
-        throw Error('هذا المستخدم غير موجود');
+    try {
+        const {user_id, price, payment_method} = req.body;
+        const {courseId} = req.params;
+        const user = await User.findById(user_id)
+        if(!user){
+            throw Error('هذا المستخدم غير موجود');
+        }
+        const course = await Course.findById(courseId)
+        if(!course){
+            throw Error('هذا الكورس غير موجود')
+        }
+        if(course.price != price){
+            throw Error('سعر الفاتورة غير متوافق مع سعر الكورس')
+        }
+        const subscription = await Subscription.findOne({user_id, course_id: courseId})
+        if(subscription){
+            throw Error('أنت مشترك في هذا الكورس بالفعل')
+        }
+        const payment = new Payment({user_id, course: courseId, amount: price})
+        await payment.save();
+        const newSubscription = new Subscription({user_id, course_id: courseId, price});
+        await newSubscription.save();
+        res.status(201).json({message: "تم الاشتراك في الكورس بنجاح"})
     }
-    const course = await Course.findById(courseId)
-    if(!course){
-        throw Error('هذا الكورس غير موجود')
+    catch (error) {
+        console.error('Error subscribing to course:', error);
+        res.status(500).json({ message: 'Error subscribing to course' });
     }
-    if(course.price != price){
-        throw Error('سعر الفاتورة غير متوافق مع سعر الكورس')
-    }
-    const subscription = await Subscription.findOne({user_id, course_id: courseId})
-    if(subscription){
-        throw Error('أنت مشترك في هذا الكورس بالفعل')
-    }
-    const payment = new Payment({user_id, course: courseId, amount: price})
-    await payment.save();
-    const newSubscription = new Subscription({user_id, course_id: courseId, price});
-    await newSubscription.save();
-    res.status(201).json({message: "تم الاشتراك في الكورس بنجاح"})
 }
 
 const deleteSubscription = async (req, res) => {
